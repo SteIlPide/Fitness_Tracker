@@ -5,22 +5,23 @@
         <ion-title>Data: {{ todayDate }}</ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content :fullscreen="true" class="ion-padding">
+    <!-- AGGIUNTA CLASSE: ion-content-with-footer -->
+    <ion-content :fullscreen="true" class="ion-padding ion-content-with-footer">
       <!-- Sezione Riepilogo Calorie -->
       <ion-card class="calorie-summary-card">
         <ion-card-content>
           <ion-grid>
             <ion-row class="ion-align-items-center ion-justify-content-between">
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value">{{ calories.eaten }}</div>
+                <div class="calorie-value">{{ userStore.dailyTotals.kcal.toFixed(0) }}</div>
                 <div class="calorie-label">Mangiate</div>
               </ion-col>
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value remaining">{{ calories.remaining }}</div>
+                <div class="calorie-value remaining">{{ userStore.remainingKcal.toFixed(0) }}</div>
                 <div class="calorie-label">Rimanenti</div>
               </ion-col>
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value">{{ calories.burned }}</div>
+                <div class="calorie-value">{{ userStore.dailyBurnedKcal.toFixed(0) }}</div>
                 <div class="calorie-label">Bruciate</div>
               </ion-col>
             </ion-row>
@@ -38,17 +39,36 @@
             <ion-row class="ion-text-center">
               <ion-col>
                 <div class="macro-label">Carboidrati</div>
-                <div class="macro-value">{{ macros.carbs.eaten }}/{{ macros.carbs.total }} g</div>
+                <div class="macro-value">
+                  {{ userStore.dailyTotals.carbs.toFixed(1) }}/{{
+                    userStore.dailyTargetKcal
+                      ? ((userStore.dailyTargetKcal * 0.5) / 4).toFixed(0)
+                      : 'N/A'
+                  }}
+                  g
+                </div>
               </ion-col>
               <ion-col>
                 <div class="macro-label">Proteine</div>
                 <div class="macro-value">
-                  {{ macros.proteins.eaten }}/{{ macros.proteins.total }} g
+                  {{ userStore.dailyTotals.proteins.toFixed(1) }}/{{
+                    userStore.dailyTargetKcal
+                      ? ((userStore.dailyTargetKcal * 0.3) / 4).toFixed(0)
+                      : 'N/A'
+                  }}
+                  g
                 </div>
               </ion-col>
               <ion-col>
                 <div class="macro-label">Grassi</div>
-                <div class="macro-value">{{ macros.fats.eaten }}/{{ macros.fats.total }} g</div>
+                <div class="macro-value">
+                  {{ userStore.dailyTotals.fats.toFixed(1) }}/{{
+                    userStore.dailyTargetKcal
+                      ? ((userStore.dailyTargetKcal * 0.2) / 9).toFixed(0)
+                      : 'N/A'
+                  }}
+                  g
+                </div>
               </ion-col>
             </ion-row>
           </ion-grid>
@@ -65,36 +85,36 @@
             <ion-item class="meal-item">
               <ion-label>
                 <h2>Colazione</h2>
-                <p>{{ meals.colazione }} kcal</p>
+                <p>{{ userStore.getMealKcal('Colazione').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('colazione')">
+              <ion-button fill="clear" @click="addFood('Colazione')">
                 <ion-icon :icon="addCircle"></ion-icon>
               </ion-button>
             </ion-item>
             <ion-item class="meal-item">
               <ion-label>
                 <h2>Pranzo</h2>
-                <p>{{ meals.pranzo }} kcal</p>
+                <p>{{ userStore.getMealKcal('Pranzo').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('pranzo')">
+              <ion-button fill="clear" @click="addFood('Pranzo')">
                 <ion-icon :icon="addCircle"></ion-icon>
               </ion-button>
             </ion-item>
             <ion-item class="meal-item">
               <ion-label>
                 <h2>Cena</h2>
-                <p>{{ meals.cena }} kcal</p>
+                <p>{{ userStore.getMealKcal('Cena').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('cena')">
+              <ion-button fill="clear" @click="addFood('Cena')">
                 <ion-icon :icon="addCircle"></ion-icon>
               </ion-button>
             </ion-item>
             <ion-item class="meal-item">
               <ion-label>
                 <h2>Spuntini</h2>
-                <p>{{ meals.spuntini }} kcal</p>
+                <p>{{ userStore.getMealKcal('Spuntino').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('spuntini')">
+              <ion-button fill="clear" @click="addFood('Spuntino')">
                 <ion-icon :icon="addCircle"></ion-icon>
               </ion-button>
             </ion-item>
@@ -131,47 +151,57 @@
       </div>
     </ion-content>
 
-    <!-- Tab Bar di Navigazione -->
-    <ion-footer>
-      <ion-toolbar>
-        <ion-tabs>
-          <ion-router-outlet></ion-router-outlet>
-          <template v-slot:bottom>
-            <ion-tab-bar>
-              <ion-tab-button tab="obiettivi" href="/obiettivi">
-                <ion-icon :icon="flag"></ion-icon>
-                <ion-label>Obiettivi</ion-label>
-              </ion-tab-button>
-
-              <ion-tab-button tab="calendario" href="/calendario">
-                <ion-icon :icon="calendar"></ion-icon>
-                <ion-label>Calendario</ion-label>
-              </ion-tab-button>
-
-              <ion-tab-button tab="home" href="/home">
-                <ion-icon :icon="home"></ion-icon>
-                <ion-label>Home</ion-label>
-              </ion-tab-button>
-
-              <ion-tab-button tab="piatti-salvati" href="/piatti-salvati">
-                <ion-icon :icon="bookmark"></ion-icon>
-                <ion-label>Piatti Salvati</ion-label>
-              </ion-tab-button>
-
-              <ion-tab-button tab="impostazioni" href="/impostazioni">
-                <ion-icon :icon="settings"></ion-icon>
-                <ion-label>Impostazioni</ion-label>
-              </ion-tab-button>
-            </ion-tab-bar>
-          </template>
-        </ion-tabs>
-      </ion-toolbar>
-    </ion-footer>
+    <!-- Menu di Navigazione Personalizzato -->
+    <div class="custom-footer-menu">
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/obiettivi' }"
+        @click="router.push('/obiettivi')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🎯" alt="Obiettivi" />
+        <span>Obiettivi</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/calendario' }"
+        @click="router.push('/calendario')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=📅" alt="Calendario" />
+        <span>Calendario</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/home' }"
+        @click="router.push('/home')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🏠" alt="Home" />
+        <span>Home</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/piatti-salvati' }"
+        @click="router.push('/piatti-salvati')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🍽️" alt="Piatti Salvati" />
+        <span>Piatti Salvati</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/impostazioni' }"
+        @click="router.push('/impostazioni')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=⚙️" alt="Impostazioni" />
+        <span>Impostazioni</span>
+      </div>
+    </div>
   </ion-page>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useFoodStore } from '../stores/food'
+import { useUserStore } from '../stores/user'
 import {
   IonPage,
   IonHeader,
@@ -191,73 +221,47 @@ import {
   IonLabel,
   IonButton,
   IonIcon,
-  IonFooter,
-  IonTabs,
-  IonTabBar,
-  IonTabButton,
-  IonRouterOutlet,
+  // Rimosso IonFooter, IonTabs, IonTabBar, IonTabButton, IonRouterOutlet
 } from '@ionic/vue'
-import { addCircle, water, flag, calendar, home, bookmark, settings } from 'ionicons/icons'
+import { addCircle, water } from 'ionicons/icons' // Le icone per il tab bar non sono più necessarie qui
 
-// Dati di esempio per la dashboard
+const router = useRouter()
+// eslint-disable-next-line no-unused-vars
+const route = useRoute()
+const foodStore = useFoodStore()
+const userStore = useUserStore()
+
 const todayDate = computed(() => {
   const date = new Date()
   return date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
 })
 
-const calories = ref({
-  eaten: 1200,
-  remaining: 800, // Questo dovrebbe essere calcolato (target - eaten + burned)
-  burned: 200,
-})
-
-const macros = ref({
-  carbs: { eaten: 150, total: 250 },
-  proteins: { eaten: 80, total: 120 },
-  fats: { eaten: 40, total: 70 },
-})
-
-const meals = ref({
-  colazione: 300,
-  pranzo: 600,
-  cena: 500,
-  spuntini: 100,
-})
-
 const waterTracker = ref({
   targetLiters: 2.5,
   glassSizeMl: 250,
-  currentGlasses: 3, // Numero di bicchieri d'acqua bevuti
+  currentGlasses: 3,
   targetGlasses: computed(() =>
     Math.ceil((waterTracker.value.targetLiters * 1000) / waterTracker.value.glassSizeMl),
   ),
 })
 
-// Logica per aggiungere cibo a un pasto (da implementare con una modale/nuova pagina)
 const addFood = (mealType) => {
-  console.log(`Aggiungi cibo a: ${mealType}`)
-  // Qui si aprirebbe una modale o si navigerebbe a una pagina di ricerca/aggiunta cibo
+  foodStore.setSelectedMealType(mealType)
+  router.push('/search-create-plate')
 }
 
-// Logica per aggiungere un piatto (generico)
 const addPlate = () => {
-  console.log('Aggiungi piatto')
-  // Naviga a una pagina per aggiungere un piatto completo
+  router.push('/select-meal')
 }
 
-// Logica per suggerire un piatto (da implementare)
 const suggestPlate = () => {
   console.log('Consiglia piatto')
-  // Attiva una logica per suggerire un piatto basato sui dati dell'utente/calorie rimanenti
 }
 
-// Logica per il contatore dell'acqua
 const toggleWaterGlass = (glassNumber) => {
   if (glassNumber <= waterTracker.value.currentGlasses) {
-    // Se clicco su un bicchiere già "pieno" o uno precedente, lo deseleziono e tutti i successivi
     waterTracker.value.currentGlasses = glassNumber - 1
   } else {
-    // Se clicco su un bicchiere "vuoto", lo riempio e tutti i precedenti
     waterTracker.value.currentGlasses = glassNumber
   }
 }
@@ -294,7 +298,7 @@ ion-card-title {
 
 /* Calorie Summary Card */
 .calorie-summary-card {
-  background: linear-gradient(135deg, #a8e063, #56ab2f); /* Sfumatura verde */
+  background: linear-gradient(135deg, #a8e063, #56ab2f);
   color: white;
 }
 
@@ -310,7 +314,7 @@ ion-card-title {
 }
 
 .calorie-value.remaining {
-  color: #ffeb3b; /* Giallo brillante per le calorie rimanenti */
+  color: #ffeb3b;
 }
 
 .calorie-label {
@@ -345,7 +349,7 @@ ion-card-title {
   --background: #f9f9f9;
   margin-bottom: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-  padding-right: 10px; /* Spazio per l'icona */
+  padding-right: 10px;
 }
 
 .meal-item h2 {
@@ -363,7 +367,7 @@ ion-card-title {
   --padding-end: 0;
   --padding-start: 0;
   font-size: 1.8em;
-  color: #2196f3; /* Blu per l'icona aggiungi */
+  color: #2196f3;
 }
 
 /* Water Tracker Card */
@@ -381,14 +385,14 @@ ion-card-title {
 }
 
 .water-glasses ion-icon {
-  font-size: 3em; /* Dimensione dell'icona del bicchiere */
-  color: #ccc; /* Colore del bicchiere vuoto */
+  font-size: 3em;
+  color: #ccc;
   transition: color 0.2s ease-in-out;
   cursor: pointer;
 }
 
 .water-glasses ion-icon.filled-glass {
-  color: #2196f3; /* Colore del bicchiere pieno */
+  color: #2196f3;
 }
 
 .water-note {
@@ -406,29 +410,86 @@ ion-card-title {
 }
 
 ion-button[color='tertiary'] {
-  --background: #ff9800; /* Arancione per "Consiglia piatto" */
+  --background: #ff9800;
   --background-activated: #fb8c00;
   --color: white;
 }
 
-/* Footer Tab Bar */
-ion-tab-bar {
-  --background: #f8f8f8;
-  border-top: 1px solid #eee;
+/* Stili per il menu personalizzato */
+.custom-footer-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70px; /* Altezza fissa del menu */
+  background-color: #ffffff; /* Sfondo bianco */
+  border-top: 1px solid #eee; /* Bordo superiore */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Ombra leggera */
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
   border-radius: 15px 15px 0 0; /* Angoli arrotondati in alto */
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+
+  /* Rimuovi gli stili di debug per il footer se non servono più */
+  /* background-color: #ff0000 !important; */
 }
 
-ion-tab-button {
-  --color: #888;
-  --color-selected: #2196f3; /* Blu per l'icona selezionata */
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  cursor: pointer;
+  color: #333; /* Colore testo default (nero) */
+  font-size: 0.75em;
+  font-weight: bold;
+  transition: all 0.2s ease-in-out;
+  min-width: 60px; /* Larghezza minima per ogni elemento */
+
+  /* Rimuovi gli stili di debug per i pulsanti se non servono più */
+  /* border: 2px solid green !important; */
+  /* background-color: yellow !important; */
+  /* min-height: 60px !important; */
 }
 
-ion-tab-button ion-icon {
-  font-size: 1.6em;
+.menu-item img {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 3px;
+  filter: none; /* Rimuove qualsiasi filtro per le icone predefinite */
+
+  /* Rimuovi gli stili di debug per le icone se non servono più */
+  /* filter: invert(0%) sepia(100%) saturate(7460%) hue-rotate(240deg) brightness(90%) contrast(100%) !important; */
+}
+/*
+.menu-item span {
+   Rimuovi gli stili di debug per il testo se non servono più
+   color: purple !important;
+}
+*/
+.menu-item.active {
+  background-color: #e0e0e0; /* Sfondo grigio per elemento attivo */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  position: relative;
+  top: -5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  color: #333; /* Colore testo attivo (nero) */
 }
 
-ion-tab-button ion-label {
-  font-size: 0.7em;
+.menu-item.active img {
+  filter: none;
+}
+
+.menu-item.active span {
+  color: #333;
+}
+
+/* NUOVO STILE: Padding inferiore per ion-content per evitare sovrapposizioni */
+ion-content.ion-content-with-footer {
+  --padding-bottom: 90px; /* Altezza del footer (70px) + un po' di margine extra */
 }
 </style>
