@@ -2,26 +2,25 @@
   <ion-page>
     <ion-header>
       <ion-toolbar>
-        <ion-title>Data: {{ todayDate }}</ion-title>
+        <ion-title>Data: {{ displayedDate }}</ion-title>
       </ion-toolbar>
     </ion-header>
-    <!-- AGGIUNTA CLASSE: ion-content-with-footer -->
-    <ion-content :fullscreen="true" class="ion-padding ion-content-with-footer">
+    <ion-content :fullscreen="true" class="ion-padding">
       <!-- Sezione Riepilogo Calorie -->
       <ion-card class="calorie-summary-card">
         <ion-card-content>
           <ion-grid>
             <ion-row class="ion-align-items-center ion-justify-content-between">
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value">{{ userStore.dailyTotals.kcal.toFixed(0) }}</div>
+                <div class="calorie-value">{{ currentDailyTotals.kcal.toFixed(0) }}</div>
                 <div class="calorie-label">Mangiate</div>
               </ion-col>
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value remaining">{{ userStore.remainingKcal.toFixed(0) }}</div>
+                <div class="calorie-value remaining">{{ currentRemainingKcal.toFixed(0) }}</div>
                 <div class="calorie-label">Rimanenti</div>
               </ion-col>
               <ion-col size="4" class="ion-text-center">
-                <div class="calorie-value">{{ userStore.dailyBurnedKcal.toFixed(0) }}</div>
+                <div class="calorie-value">{{ currentDailyBurnedKcal.toFixed(0) }}</div>
                 <div class="calorie-label">Bruciate</div>
               </ion-col>
             </ion-row>
@@ -29,7 +28,7 @@
         </ion-card-content>
       </ion-card>
 
-      <!-- Sezione Macronutrienti -->
+      <!-- Sezione Macronutrienti Totali -->
       <ion-card class="macronutrients-card">
         <ion-card-header>
           <ion-card-title>Macronutrienti</ion-card-title>
@@ -40,10 +39,8 @@
               <ion-col>
                 <div class="macro-label">Carboidrati</div>
                 <div class="macro-value">
-                  {{ userStore.dailyTotals.carbs.toFixed(1) }}/{{
-                    userStore.dailyTargetKcal
-                      ? ((userStore.dailyTargetKcal * 0.5) / 4).toFixed(0)
-                      : 'N/A'
+                  {{ currentDailyTotals.carbs.toFixed(1) }}/{{
+                    currentDailyTargetKcal ? ((currentDailyTargetKcal * 0.5) / 4).toFixed(0) : 'N/A'
                   }}
                   g
                 </div>
@@ -51,10 +48,8 @@
               <ion-col>
                 <div class="macro-label">Proteine</div>
                 <div class="macro-value">
-                  {{ userStore.dailyTotals.proteins.toFixed(1) }}/{{
-                    userStore.dailyTargetKcal
-                      ? ((userStore.dailyTargetKcal * 0.3) / 4).toFixed(0)
-                      : 'N/A'
+                  {{ currentDailyTotals.proteins.toFixed(1) }}/{{
+                    currentDailyTargetKcal ? ((currentDailyTargetKcal * 0.3) / 4).toFixed(0) : 'N/A'
                   }}
                   g
                 </div>
@@ -62,10 +57,8 @@
               <ion-col>
                 <div class="macro-label">Grassi</div>
                 <div class="macro-value">
-                  {{ userStore.dailyTotals.fats.toFixed(1) }}/{{
-                    userStore.dailyTargetKcal
-                      ? ((userStore.dailyTargetKcal * 0.2) / 9).toFixed(0)
-                      : 'N/A'
+                  {{ currentDailyTotals.fats.toFixed(1) }}/{{
+                    currentDailyTargetKcal ? ((currentDailyTargetKcal * 0.2) / 9).toFixed(0) : 'N/A'
                   }}
                   g
                 </div>
@@ -82,123 +75,239 @@
         </ion-card-header>
         <ion-card-content>
           <ion-list lines="none">
+            <!-- Colazione -->
             <ion-item class="meal-item">
+              <div class="meal-icon-wrapper">
+                <ion-icon :icon="cafeOutline"></ion-icon>
+                <!-- Icona aggiornata -->
+              </div>
               <ion-label>
                 <h2>Colazione</h2>
-                <p>{{ userStore.getMealKcal('Colazione').toFixed(0) }} kcal</p>
+                <p>{{ getMealKcalForDisplay('Colazione').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('Colazione')">
-                <ion-icon :icon="addCircle"></ion-icon>
+              <ion-button v-if="isCurrentDay" fill="clear" @click="toggleMealMacros('Colazione')">
+                <ion-icon
+                  :icon="expandedMeal === 'Colazione' ? removeCircleOutline : addCircleOutline"
+                ></ion-icon>
+                <!-- Icone aggiornate -->
               </ion-button>
             </ion-item>
+            <div v-if="expandedMeal === 'Colazione'" class="meal-macros-details">
+              <ion-item lines="none">
+                <ion-label>Carboidrati</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Colazione').carbs.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Proteine</ion-label>
+                <ion-text
+                  >{{ getMealMacrosForDisplay('Colazione').proteins.toFixed(1) }} g</ion-text
+                >
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Grassi</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Colazione').fats.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-button
+                v-if="isCurrentDay"
+                expand="block"
+                fill="outline"
+                size="small"
+                @click="addFoodToMeal('Colazione')"
+                >Aggiungi cibo</ion-button
+              >
+            </div>
+
+            <!-- Pranzo -->
             <ion-item class="meal-item">
+              <div class="meal-icon-wrapper">
+                <ion-icon :icon="restaurantOutline"></ion-icon>
+                <!-- Icona aggiornata -->
+              </div>
               <ion-label>
                 <h2>Pranzo</h2>
-                <p>{{ userStore.getMealKcal('Pranzo').toFixed(0) }} kcal</p>
+                <p>{{ getMealKcalForDisplay('Pranzo').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('Pranzo')">
-                <ion-icon :icon="addCircle"></ion-icon>
+              <ion-button v-if="isCurrentDay" fill="clear" @click="toggleMealMacros('Pranzo')">
+                <ion-icon
+                  :icon="expandedMeal === 'Pranzo' ? removeCircleOutline : addCircleOutline"
+                ></ion-icon>
+                <!-- Icone aggiornate -->
               </ion-button>
             </ion-item>
+            <div v-if="expandedMeal === 'Pranzo'" class="meal-macros-details">
+              <ion-item lines="none">
+                <ion-label>Carboidrati</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Pranzo').carbs.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Proteine</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Pranzo').proteins.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Grassi</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Pranzo').fats.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-button
+                v-if="isCurrentDay"
+                expand="block"
+                fill="outline"
+                size="small"
+                @click="addFoodToMeal('Pranzo')"
+                >Aggiungi cibo</ion-button
+              >
+            </div>
+
+            <!-- Cena -->
             <ion-item class="meal-item">
+              <div class="meal-icon-wrapper">
+                <ion-icon :icon="restaurantOutline"></ion-icon>
+                <!-- Icona aggiornata -->
+              </div>
               <ion-label>
                 <h2>Cena</h2>
-                <p>{{ userStore.getMealKcal('Cena').toFixed(0) }} kcal</p>
+                <p>{{ getMealKcalForDisplay('Cena').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('Cena')">
-                <ion-icon :icon="addCircle"></ion-icon>
+              <ion-button v-if="isCurrentDay" fill="clear" @click="toggleMealMacros('Cena')">
+                <ion-icon
+                  :icon="expandedMeal === 'Cena' ? removeCircleOutline : addCircleOutline"
+                ></ion-icon>
+                <!-- Icone aggiornate -->
               </ion-button>
             </ion-item>
+            <div v-if="expandedMeal === 'Cena'" class="meal-macros-details">
+              <ion-item lines="none">
+                <ion-label>Carboidrati</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Cena').carbs.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Proteine</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Cena').proteins.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Grassi</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Cena').fats.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-button
+                v-if="isCurrentDay"
+                expand="block"
+                fill="outline"
+                size="small"
+                @click="addFoodToMeal('Cena')"
+                >Aggiungi cibo</ion-button
+              >
+            </div>
+
+            <!-- Spuntini -->
             <ion-item class="meal-item">
+              <div class="meal-icon-wrapper">
+                <ion-icon :icon="nutritionOutline"></ion-icon>
+                <!-- Icona aggiornata -->
+              </div>
               <ion-label>
                 <h2>Spuntini</h2>
-                <p>{{ userStore.getMealKcal('Spuntino').toFixed(0) }} kcal</p>
+                <p>{{ getMealKcalForDisplay('Spuntino').toFixed(0) }} kcal</p>
               </ion-label>
-              <ion-button fill="clear" @click="addFood('Spuntino')">
-                <ion-icon :icon="addCircle"></ion-icon>
+              <ion-button v-if="isCurrentDay" fill="clear" @click="toggleMealMacros('Spuntino')">
+                <ion-icon
+                  :icon="expandedMeal === 'Spuntino' ? removeCircleOutline : addCircleOutline"
+                ></ion-icon>
+                <!-- Icone aggiornate -->
               </ion-button>
             </ion-item>
+            <div v-if="expandedMeal === 'Spuntino'" class="meal-macros-details">
+              <ion-item lines="none">
+                <ion-label>Carboidrati</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Spuntino').carbs.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Proteine</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Spuntino').proteins.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-item lines="none">
+                <ion-label>Grassi</ion-label>
+                <ion-text>{{ getMealMacrosForDisplay('Spuntino').fats.toFixed(1) }} g</ion-text>
+              </ion-item>
+              <ion-button
+                v-if="isCurrentDay"
+                expand="block"
+                fill="outline"
+                size="small"
+                @click="addFoodToMeal('Spuntino')"
+                >Aggiungi cibo</ion-button
+              >
+            </div>
           </ion-list>
+          <!-- Se non ci sono pasti per il giorno selezionato -->
+          <p v-if="!hasMealsForDisplay" class="ion-text-center ion-padding-top">
+            Nessun pasto registrato per questo giorno.
+          </p>
         </ion-card-content>
       </ion-card>
 
-      <!-- Sezione Contatore Acqua -->
-      <ion-card class="water-tracker-card">
+      <!-- Sezione Contatore Acqua (Mostra solo se è il giorno corrente) -->
+      <ion-card class="water-tracker-card" v-if="isCurrentDay">
         <ion-card-header>
           <ion-card-title>Contatore di acqua</ion-card-title>
           <ion-card-subtitle>Obiettivo: {{ waterTracker.targetLiters }} L</ion-card-subtitle>
         </ion-card-header>
         <ion-card-content class="ion-text-center">
           <div class="water-glasses">
-            <ion-icon
+            <div
               v-for="n in waterTracker.targetGlasses"
               :key="n"
-              :icon="water"
+              class="water-glass"
               :class="{ 'filled-glass': n <= waterTracker.currentGlasses }"
               @click="toggleWaterGlass(n)"
-            ></ion-icon>
+            >
+              <svg
+                width="40"
+                height="40"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M6 7H18V21H6V7Z"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M5 7H19"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <rect
+                  x="6"
+                  :y="21 - 14 * (n <= waterTracker.currentGlasses ? 1 : 0)"
+                  width="12"
+                  :height="14 * (n <= waterTracker.currentGlasses ? 1 : 0)"
+                  fill="currentColor"
+                  class="water-fill-rect"
+                />
+              </svg>
+            </div>
           </div>
           <p class="ion-text-center water-note">nota: 1 bicchiere = 250 ml</p>
         </ion-card-content>
       </ion-card>
 
-      <!-- Bottoni Azione -->
-      <div class="action-buttons ion-padding-top">
+      <!-- Bottoni Azione (Mostra solo se è il giorno corrente) -->
+      <div class="action-buttons ion-padding-top" v-if="isCurrentDay">
         <ion-button expand="block" @click="addPlate">Aggiungi piatto</ion-button>
         <ion-button expand="block" color="tertiary" @click="suggestPlate"
           >Consiglia piatto</ion-button
         >
       </div>
     </ion-content>
-
-    <!-- Menu di Navigazione Personalizzato -->
-    <div class="custom-footer-menu">
-      <div
-        class="menu-item"
-        :class="{ active: $route.path === '/obiettivi' }"
-        @click="router.push('/obiettivi')"
-      >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=🎯" alt="Obiettivi" />
-        <span>Obiettivi</span>
-      </div>
-      <div
-        class="menu-item"
-        :class="{ active: $route.path === '/calendario' }"
-        @click="router.push('/calendario')"
-      >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=📅" alt="Calendario" />
-        <span>Calendario</span>
-      </div>
-      <div
-        class="menu-item"
-        :class="{ active: $route.path === '/home' }"
-        @click="router.push('/home')"
-      >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=🏠" alt="Home" />
-        <span>Home</span>
-      </div>
-      <div
-        class="menu-item"
-        :class="{ active: $route.path === '/piatti-salvati' }"
-        @click="router.push('/piatti-salvati')"
-      >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=🍽️" alt="Piatti Salvati" />
-        <span>Piatti Salvati</span>
-      </div>
-      <div
-        class="menu-item"
-        :class="{ active: $route.path === '/impostazioni' }"
-        @click="router.push('/impostazioni')"
-      >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=⚙️" alt="Impostazioni" />
-        <span>Impostazioni</span>
-      </div>
-    </div>
   </ion-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFoodStore } from '../stores/food'
 import { useUserStore } from '../stores/user'
@@ -211,7 +320,6 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
-  IonCardSubtitle,
   IonCardContent,
   IonGrid,
   IonRow,
@@ -221,20 +329,128 @@ import {
   IonLabel,
   IonButton,
   IonIcon,
-  // Rimosso IonFooter, IonTabs, IonTabBar, IonTabButton, IonRouterOutlet
+  IonText,
 } from '@ionic/vue'
-import { addCircle, water } from 'ionicons/icons' // Le icone per il tab bar non sono più necessarie qui
+// Importa le icone con il suffisso 'Outline' per maggiore compatibilità
+import {
+  addCircleOutline,
+  removeCircleOutline,
+  cafeOutline,
+  restaurantOutline,
+  nutritionOutline,
+} from 'ionicons/icons'
 
 const router = useRouter()
-// eslint-disable-next-line no-unused-vars
 const route = useRoute()
 const foodStore = useFoodStore()
 const userStore = useUserStore()
 
-const todayDate = computed(() => {
-  const date = new Date()
-  return date.toLocaleDateString('it-IT', { weekday: 'long', day: 'numeric', month: 'long' })
+const displayedDate = ref('')
+const isCurrentDay = ref(true)
+
+const currentDailyTotals = ref({ kcal: 0, carbs: 0, proteins: 0, fats: 0 })
+const currentDailyTargetKcal = ref(2000)
+const currentDailyBurnedKcal = ref(0)
+const currentDailyLog = ref({ Colazione: [], Pranzo: [], Cena: [], Spuntino: [] })
+
+const expandedMeal = ref(null)
+
+const currentRemainingKcal = computed(() => {
+  return currentDailyTargetKcal.value - currentDailyTotals.value.kcal + currentDailyBurnedKcal.value
 })
+
+const getMealKcalForDisplay = (mealType) => {
+  return currentDailyLog.value[mealType]
+    ? currentDailyLog.value[mealType].reduce((sum, entry) => sum + entry.kcal, 0)
+    : 0
+}
+
+const getMealMacrosForDisplay = (mealType) => {
+  if (isCurrentDay.value) {
+    return userStore.getMealMacros(mealType)
+  } else {
+    console.log(`DEBUG: Richiesti macro per pasto storico: ${mealType}. Restituisco zeri.`)
+    return { carbs: 0, proteins: 0, fats: 0 }
+  }
+}
+
+const hasMealsForDisplay = computed(() => {
+  return Object.values(currentDailyLog.value).some((mealArray) => mealArray.length > 0)
+})
+
+const loadDataForDate = (dateString) => {
+  console.log(`DEBUG: Caricamento dati per la data: ${dateString}`)
+  const todayString = new Date().toISOString().slice(0, 10)
+  isCurrentDay.value = dateString === todayString
+
+  if (isCurrentDay.value) {
+    console.log('DEBUG: Caricamento dati per il giorno corrente.')
+    displayedDate.value = new Date().toLocaleDateString('it-IT', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'long',
+    })
+    currentDailyTotals.value = userStore.dailyTotals
+    currentDailyTargetKcal.value = userStore.dailyTargetKcal
+    currentDailyBurnedKcal.value = userStore.dailyBurnedKcal
+    currentDailyLog.value = userStore.dailyLog
+  } else {
+    console.log('DEBUG: Caricamento dati per un giorno storico.')
+    const historicalData = userStore.getDailySummary(dateString)
+    if (historicalData) {
+      console.log('DEBUG: Dati storici trovati:', historicalData)
+      displayedDate.value = new Date(dateString).toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      })
+      currentDailyTotals.value = {
+        kcal: historicalData.kcal || 0,
+        carbs: historicalData.carbs || 0,
+        proteins: historicalData.proteins || 0,
+        fats: historicalData.fats || 0,
+      }
+      currentDailyTargetKcal.value = historicalData.targetKcal || 2000
+      currentDailyBurnedKcal.value = historicalData.burnedKcal || 0
+      currentDailyLog.value = { Colazione: [], Pranzo: [], Cena: [], Spuntino: [] }
+    } else {
+      console.log('DEBUG: Nessun dato storico trovato per questa data.')
+      displayedDate.value = new Date(dateString).toLocaleDateString('it-IT', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+      })
+      currentDailyTotals.value = { kcal: 0, carbs: 0, proteins: 0, fats: 0 }
+      currentDailyTargetKcal.value = 2000
+      currentDailyBurnedKcal.value = 0
+      currentDailyLog.value = { Colazione: [], Pranzo: [], Cena: [], Spuntino: [] }
+    }
+  }
+  expandedMeal.value = null
+}
+
+onMounted(() => {
+  console.log('DEBUG: HomePage montata.')
+  const dateParam = route.query.date
+  if (dateParam) {
+    loadDataForDate(dateParam)
+  } else {
+    loadDataForDate(userStore.currentDateString)
+  }
+})
+
+watch(
+  () => route.query.date,
+  (newDate) => {
+    console.log('DEBUG: Parametro data cambiato:', newDate)
+    if (newDate) {
+      loadDataForDate(newDate)
+    } else {
+      loadDataForDate(userStore.currentDateString)
+    }
+  },
+  { immediate: true },
+)
 
 const waterTracker = ref({
   targetLiters: 2.5,
@@ -245,24 +461,42 @@ const waterTracker = ref({
   ),
 })
 
-const addFood = (mealType) => {
+const addFoodToMeal = (mealType) => {
+  console.log(`DEBUG: Navigazione per aggiungere cibo al pasto: ${mealType}`)
   foodStore.setSelectedMealType(mealType)
   router.push('/search-create-plate')
 }
 
 const addPlate = () => {
+  console.log('DEBUG: Navigazione per aggiungere piatto (generico).')
   router.push('/select-meal')
 }
 
 const suggestPlate = () => {
-  console.log('Consiglia piatto')
+  console.log('DEBUG: Consiglia piatto cliccato.')
 }
 
 const toggleWaterGlass = (glassNumber) => {
-  if (glassNumber <= waterTracker.value.currentGlasses) {
-    waterTracker.value.currentGlasses = glassNumber - 1
+  if (isCurrentDay.value) {
+    if (glassNumber <= waterTracker.value.currentGlasses) {
+      waterTracker.value.currentGlasses = glassNumber - 1
+    } else {
+      waterTracker.value.currentGlasses = glassNumber
+    }
+    console.log(`DEBUG: Contatore acqua aggiornato a: ${waterTracker.value.currentGlasses}`)
   } else {
-    waterTracker.value.currentGlasses = glassNumber
+    console.log('DEBUG: Tentativo di modificare contatore acqua per giorno storico. Non permesso.')
+  }
+}
+
+const toggleMealMacros = (mealType) => {
+  console.log(`DEBUG: Toggle macro per pasto: ${mealType}. Stato attuale: ${expandedMeal.value}`)
+  if (expandedMeal.value === mealType) {
+    expandedMeal.value = null
+    console.log(`DEBUG: Piatto ${mealType} collassato.`)
+  } else {
+    expandedMeal.value = mealType
+    console.log(`DEBUG: Piatto ${mealType} espanso.`)
   }
 }
 </script>
@@ -350,6 +584,20 @@ ion-card-title {
   margin-bottom: 10px;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
   padding-right: 10px;
+  display: flex;
+  align-items: center;
+}
+
+.meal-icon-wrapper {
+  margin-right: 10px;
+  font-size: 1.8em;
+  color: #555;
+  display: flex;
+  align-items: center;
+}
+
+.meal-item ion-label {
+  flex-grow: 1;
 }
 
 .meal-item h2 {
@@ -370,6 +618,42 @@ ion-card-title {
   color: #2196f3;
 }
 
+/* Stili per i dettagli dei macronutrienti del pasto */
+.meal-macros-details {
+  background-color: #f0f0f0;
+  border-radius: 0 0 10px 10px;
+  margin-top: -10px;
+  margin-bottom: 10px;
+  padding: 10px 0;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.meal-macros-details ion-item {
+  --background: transparent;
+  --padding-start: 20px;
+  --inner-padding-end: 16px;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.meal-macros-details ion-item ion-label {
+  font-weight: normal;
+}
+
+.meal-macros-details ion-item ion-text {
+  font-weight: bold;
+  color: #333;
+}
+
+.meal-macros-details ion-button {
+  margin-top: 10px;
+  margin-left: 20px;
+  margin-right: 20px;
+  --border-radius: 8px;
+  height: 40px;
+  font-size: 0.9em;
+}
+
 /* Water Tracker Card */
 .water-tracker-card ion-card-subtitle {
   color: #555;
@@ -384,15 +668,36 @@ ion-card-title {
   margin-bottom: 10px;
 }
 
-.water-glasses ion-icon {
-  font-size: 3em;
-  color: #ccc;
-  transition: color 0.2s ease-in-out;
+/* Stili per i bicchieri SVG */
+.water-glass {
   cursor: pointer;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: transform 0.2s ease-in-out;
+  position: relative;
 }
 
-.water-glasses ion-icon.filled-glass {
+.water-glass svg {
+  width: 100%;
+  height: 100%;
+  color: #ccc;
+  overflow: hidden;
+}
+
+.water-glass.filled-glass svg {
   color: #2196f3;
+}
+
+.water-glass svg .water-fill-rect {
+  transition: all 0.3s ease-in-out;
+  transform-origin: bottom;
+}
+
+.water-glass.filled-glass svg .water-fill-rect {
+  fill: #2196f3;
 }
 
 .water-note {
@@ -413,83 +718,5 @@ ion-button[color='tertiary'] {
   --background: #ff9800;
   --background-activated: #fb8c00;
   --color: white;
-}
-
-/* Stili per il menu personalizzato */
-.custom-footer-menu {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 70px; /* Altezza fissa del menu */
-  background-color: #ffffff; /* Sfondo bianco */
-  border-top: 1px solid #eee; /* Bordo superiore */
-  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Ombra leggera */
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  z-index: 100;
-  border-radius: 15px 15px 0 0; /* Angoli arrotondati in alto */
-
-  /* Rimuovi gli stili di debug per il footer se non servono più */
-  /* background-color: #ff0000 !important; */
-}
-
-.menu-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 5px;
-  cursor: pointer;
-  color: #333; /* Colore testo default (nero) */
-  font-size: 0.75em;
-  font-weight: bold;
-  transition: all 0.2s ease-in-out;
-  min-width: 60px; /* Larghezza minima per ogni elemento */
-
-  /* Rimuovi gli stili di debug per i pulsanti se non servono più */
-  /* border: 2px solid green !important; */
-  /* background-color: yellow !important; */
-  /* min-height: 60px !important; */
-}
-
-.menu-item img {
-  width: 24px;
-  height: 24px;
-  margin-bottom: 3px;
-  filter: none; /* Rimuove qualsiasi filtro per le icone predefinite */
-
-  /* Rimuovi gli stili di debug per le icone se non servono più */
-  /* filter: invert(0%) sepia(100%) saturate(7460%) hue-rotate(240deg) brightness(90%) contrast(100%) !important; */
-}
-/*
-.menu-item span {
-   Rimuovi gli stili di debug per il testo se non servono più
-   color: purple !important;
-}
-*/
-.menu-item.active {
-  background-color: #e0e0e0; /* Sfondo grigio per elemento attivo */
-  border-radius: 50%;
-  width: 60px;
-  height: 60px;
-  position: relative;
-  top: -5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  color: #333; /* Colore testo attivo (nero) */
-}
-
-.menu-item.active img {
-  filter: none;
-}
-
-.menu-item.active span {
-  color: #333;
-}
-
-/* NUOVO STILE: Padding inferiore per ion-content per evitare sovrapposizioni */
-ion-content.ion-content-with-footer {
-  --padding-bottom: 90px; /* Altezza del footer (70px) + un po' di margine extra */
 }
 </style>

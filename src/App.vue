@@ -1,68 +1,150 @@
-<!--
-<script setup>
-import HelloWorld from './components/HelloWorld.vue'
-import TheWelcome from './components/TheWelcome.vue'
-</script>
-
 <template>
-  <header>
-    <img alt="Vue logo" class="logo" src="./assets/logo.svg" width="125" height="125" />
-
-    <div class="wrapper">
-      <HelloWorld msg="You did itt!" />
-    </div>
-  </header>
-
-  <main>
-    <TheWelcome />
-  </main>
-</template>
-
-<style scoped>
-header {
-  line-height: 1.5;
-}
-
-.logo {
-  display: block;
-  margin: 0 auto 2rem;
-}
-
-@media (min-width: 1024px) {
-  header {
-    display: flex;
-    place-items: center;
-    padding-right: calc(var(--section-gap) / 2);
-  }
-
-  .logo {
-    margin: 0 2rem 0 0;
-  }
-
-  header .wrapper {
-    display: flex;
-    place-items: flex-start;
-    flex-wrap: wrap;
-  }
-}
-</style>
--->
-<template>
-  <!-- ion-app è il contenitore principale per le app Ionic -->
   <ion-app>
-    <!-- ion-router-outlet è dove Vue Router renderà i tuoi componenti di pagina -->
+    <!-- ion-router-outlet renderà il contenuto della pagina corrente -->
     <ion-router-outlet />
+
+    <!-- Menu di Navigazione Personalizzato (Globale e Condizionale) -->
+    <div class="custom-footer-menu" v-if="showFooter">
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/obiettivi' }"
+        @click="router.push('/obiettivi')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🎯" alt="Obiettivi" />
+        <span>Obiettivi</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/calendario' }"
+        @click="router.push('/calendario')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=📅" alt="Calendario" />
+        <span>Calendario</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/home' }"
+        @click="router.push('/home')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🏠" alt="Home" />
+        <span>Home</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/piatti-salvati' }"
+        @click="router.push('/piatti-salvati')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🍽️" alt="Piatti Salvati" />
+        <span>Piatti Salvati</span>
+      </div>
+      <div
+        class="menu-item"
+        :class="{ active: $route.path === '/impostazioni' }"
+        @click="router.push('/impostazioni')"
+      >
+        <img src="https://placehold.co/24x24/000000/ffffff?text=⚙️" alt="Impostazioni" />
+        <span>Impostazioni</span>
+      </div>
+    </div>
   </ion-app>
 </template>
 
 <script setup>
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
-// Non sono necessari altri script o logiche complesse qui,
-// App.vue serve principalmente come contenitore per il router.
+import { useRouter, useRoute } from 'vue-router' // Importa useRoute
+import { computed } from 'vue' // Importa computed
+
+const router = useRouter()
+const route = useRoute() // Necessario per la classe 'active' e per showFooter
+
+// Definisci le rotte in cui il footer DEVE essere visibile
+const routesWithFooter = [
+  '/home',
+  '/obiettivi',
+  '/calendario',
+  '/piatti-salvati',
+  '/impostazioni',
+  // Includi anche le pagine di aggiunta/ricerca cibo se vuoi il footer lì
+  '/select-meal',
+  '/search-create-plate',
+  '/add-plate-details',
+  '/search-results',
+  '/enter-quantity',
+  '/food-summary',
+]
+
+// Computed property per determinare se mostrare il footer
+const showFooter = computed(() => {
+  return routesWithFooter.includes(route.path)
+})
 </script>
 
 <style>
-/* Puoi aggiungere stili globali qui se necessario,
-   ma per la maggior parte degli stili userai i file CSS di Ionic
-   e gli stili scoped nei singoli componenti delle pagine. */
+/* Stili per il menu personalizzato (FINALIZZATI) */
+.custom-footer-menu {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 70px; /* Altezza fissa del menu */
+  background-color: #ffffff; /* Sfondo bianco */
+  border-top: 1px solid #eee; /* Bordo superiore */
+  box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05); /* Ombra leggera */
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  border-radius: 15px 15px 0 0; /* Angoli arrotondati in alto */
+}
+
+.menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  cursor: pointer;
+  color: #333; /* Colore testo default (nero) */
+  font-size: 0.75em;
+  font-weight: bold;
+  transition: all 0.2s ease-in-out;
+  min-width: 60px; /* Larghezza minima per ogni elemento */
+}
+
+.menu-item img {
+  width: 24px;
+  height: 24px;
+  margin-bottom: 3px;
+  filter: none; /* Rimuove qualsiasi filtro per le icone predefinite */
+}
+
+.menu-item.active {
+  background-color: #e0e0e0; /* Sfondo grigio per elemento attivo */
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  position: relative;
+  top: -5px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  color: #333; /* Colore testo attivo (nero) */
+}
+
+.menu-item.active img {
+  filter: none;
+}
+
+.menu-item.active span {
+  color: #333;
+}
+
+/* Stile globale per tutti gli ion-content che necessitano di padding per il footer fisso */
+/* Questo stile viene applicato solo se il footer è visibile */
+ion-content {
+  --padding-bottom: var(--ion-safe-area-bottom, 0px); /* Reset default per le pagine senza footer */
+}
+
+/* Se il footer è visibile, aggiungi il padding */
+ion-app.has-footer ion-content {
+  --padding-bottom: 90px; /* Altezza del footer (70px) + un po' di margine extra */
+}
 </style>
