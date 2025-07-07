@@ -7,266 +7,217 @@
             <ion-back-button></ion-back-button>
           </ion-buttons>
         </template>
-        <ion-title>Crea il tuo piatto</ion-title>
+        <ion-title>{{ isEditMode ? 'Modifica Piatto' : 'Aggiungi Dettagli Piatto' }}</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content :fullscreen="true" class="ion-padding">
-      <ion-item>
-        <ion-label position="stacked">Nome del piatto:</ion-label>
-        <ion-input
-          v-model="foodStore.currentPlate.name"
-          placeholder="Es. Pollo al curry"
-        ></ion-input>
-      </ion-item>
-
-      <ion-list-header class="ion-margin-top">
-        <ion-label>Aggiungi ingrediente</ion-label>
-        <ion-button fill="clear" @click="showAddIngredientModal">
-          <ion-icon :icon="addCircle"></ion-icon>
-        </ion-button>
-      </ion-list-header>
-
-      <ion-list v-if="foodStore.currentPlate.ingredients.length > 0">
-        <ion-item v-for="(ingredient, index) in foodStore.currentPlate.ingredients" :key="index">
-          <ion-label>
-            {{ ingredient.name }}
-            <p>{{ ingredient.quantity }} {{ ingredient.unit }}</p>
-          </ion-label>
-          <ion-button
-            fill="clear"
-            color="danger"
-            @click="foodStore.removeIngredientFromCurrentPlate(index)"
-          >
-            <ion-icon :icon="closeCircle"></ion-icon>
-          </ion-button>
-        </ion-item>
-      </ion-list>
-      <p v-else class="ion-text-center ion-padding-top">Nessun ingrediente aggiunto.</p>
-
-      <ion-list-header class="ion-margin-top">
-        <ion-label>Proprietà (Totali per il piatto)</ion-label>
-      </ion-list-header>
-
-      <!-- Visualizzazione dei valori CALCOLATI -->
-      <ion-item>
-        <ion-label>Peso totale del piatto</ion-label>
-        <ion-text>{{ calculatedTotalWeight.toFixed(0) }} g</ion-text>
-      </ion-item>
-      <ion-item>
-        <ion-label>Calorie totali</ion-label>
-        <ion-text>{{ calculatedTotalKcal.toFixed(0) }} kcal</ion-text>
-      </ion-item>
-      <ion-item>
-        <ion-label>Carboidrati totali</ion-label>
-        <ion-text>{{ calculatedTotalCarbs.toFixed(1) }} g</ion-text>
-      </ion-item>
-      <ion-item>
-        <ion-label>Proteine totali</ion-label>
-        <ion-text>{{ calculatedTotalProteins.toFixed(1) }} g</ion-text>
-      </ion-item>
-      <ion-item>
-        <ion-label>Grassi totali</ion-label>
-        <ion-text>{{ calculatedTotalFats.toFixed(1) }} g</ion-text>
-      </ion-item>
-
-      <ion-button expand="block" class="ion-margin-top" @click="savePlate">Avanti</ion-button>
-
-      <!-- Modale per aggiungere ingrediente -->
-      <ion-modal :is-open="isModalOpen" @didDismiss="isModalOpen = false">
-        <ion-header>
-          <ion-toolbar>
-            <ion-title>Aggiungi Ingrediente</ion-title>
-            <template v-slot:end>
-              <ion-buttons>
-                <ion-button @click="isModalOpen = false">Chiudi</ion-button>
-              </ion-buttons>
-            </template>
-          </ion-toolbar>
-        </ion-header>
-        <ion-content class="ion-padding">
+      <ion-card>
+        <ion-card-content>
           <ion-item>
-            <ion-label position="stacked">Nome Ingrediente:</ion-label>
-            <ion-input v-model="newIngredient.name" placeholder="Es. Pollo"></ion-input>
+            <ion-label position="floating" for="plateName">Nome del Piatto</ion-label>
+            <ion-input id="plateName" v-model="plateDetails.name" required></ion-input>
           </ion-item>
-          <ion-item class="ion-margin-top">
-            <ion-label position="stacked">Quantità (g):</ion-label>
+          <ion-item>
+            <ion-label position="floating" for="plateKcal">Calorie (kcal)</ion-label>
             <ion-input
+              id="plateKcal"
               type="number"
-              v-model="newIngredient.quantity"
-              placeholder="Es. 100"
+              v-model="plateDetails.kcal"
+              required
             ></ion-input>
           </ion-item>
-          <!-- Ho rimosso l'unità per semplicità, assumendo che sia sempre 'g' per il calcolo.
-               Se vuoi unità diverse, dovrai gestire la conversione. -->
-          <ion-button expand="block" class="ion-margin-top" @click="addIngredient"
-            >Aggiungi</ion-button
-          >
-        </ion-content>
-      </ion-modal>
+          <ion-item>
+            <ion-label position="floating" for="plateCarbs">Carboidrati (g)</ion-label>
+            <ion-input id="plateCarbs" type="number" v-model="plateDetails.carbs"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="floating" for="plateProteins">Proteine (g)</ion-label>
+            <ion-input id="plateProteins" type="number" v-model="plateDetails.proteins"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-label position="floating" for="plateFats">Grassi (g)</ion-label>
+            <ion-input id="plateFats" type="number" v-model="plateDetails.fats"></ion-input>
+          </ion-item>
+
+          <ion-list-header>Ingredienti</ion-list-header>
+          <ion-item v-for="(ingredient, index) in plateDetails.ingredients" :key="index">
+            <!-- ID univoco per ogni ingrediente usando l'indice -->
+            <ion-label position="floating" :for="'ingredient-' + index"
+              >Ingrediente {{ index + 1 }}</ion-label
+            >
+            <ion-input
+              :id="'ingredient-' + index"
+              v-model="plateDetails.ingredients[index]"
+            ></ion-input>
+            <template v-slot:end>
+              <ion-button fill="clear" @click="removeIngredient(index)">
+                <ion-icon :icon="removeCircleOutline"></ion-icon>
+              </ion-button>
+            </template>
+          </ion-item>
+          <ion-button expand="block" fill="outline" class="ion-margin-top" @click="addIngredient">
+            <template v-slot:start>
+              <ion-icon :icon="addCircleOutline"></ion-icon>
+            </template>
+            Aggiungi Ingrediente
+          </ion-button>
+
+          <ion-button expand="block" class="ion-margin-top" @click="savePlate">
+            {{ isEditMode ? 'Salva Modifiche' : 'Salva Piatto' }}
+          </ion-button>
+        </ion-card-content>
+      </ion-card>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useFoodStore } from '../stores/food'
+import { useDishesStore } from '../stores/dishes'
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
   IonContent,
+  IonButtons,
+  IonBackButton,
+  IonCard,
+  IonCardContent,
   IonItem,
   IonLabel,
   IonInput,
-  IonListHeader,
-  IonList,
-  IonText,
   IonButton,
   IonIcon,
-  IonModal,
-  IonButtons,
-  IonBackButton,
+  IonListHeader,
 } from '@ionic/vue'
-import { addCircle, closeCircle } from 'ionicons/icons'
+import { addCircleOutline, removeCircleOutline } from 'ionicons/icons'
 
 const router = useRouter()
+// eslint-disable-next-line no-unused-vars
 const foodStore = useFoodStore()
+const dishesStore = useDishesStore()
 
-const isModalOpen = ref(false)
-const newIngredient = ref({ name: '', quantity: null, unit: 'g' }) // Assumiamo 'g' come default
+const props = defineProps({
+  dishId: String,
+})
 
-const showAddIngredientModal = () => {
-  newIngredient.value = { name: '', quantity: null, unit: 'g' } // Resetta il form
-  isModalOpen.value = true
+const isEditMode = ref(false)
+
+const plateDetails = ref({
+  id: null,
+  name: '',
+  kcal: null,
+  carbs: null,
+  proteins: null,
+  fats: null,
+  ingredients: [''],
+})
+
+const loadPlateForEdit = () => {
+  if (props.dishId) {
+    isEditMode.value = true
+    const dishToEdit = dishesStore.getDishById(props.dishId)
+    if (dishToEdit) {
+      plateDetails.value = { ...dishToEdit }
+      if (!plateDetails.value.ingredients || plateDetails.value.ingredients.length === 0) {
+        plateDetails.value.ingredients = ['']
+      }
+    } else {
+      console.warn(`Piatto con ID ${props.dishId} non trovato per la modifica.`)
+      isEditMode.value = false
+      resetPlateDetails()
+    }
+  } else {
+    isEditMode.value = false
+    resetPlateDetails()
+  }
+}
+
+const resetPlateDetails = () => {
+  plateDetails.value = {
+    id: null,
+    name: '',
+    kcal: null,
+    carbs: null,
+    proteins: null,
+    fats: null,
+    ingredients: [''],
+  }
 }
 
 const addIngredient = () => {
-  if (newIngredient.value.name && newIngredient.value.quantity > 0) {
-    // Verifica se l'ingrediente esiste nel database per il calcolo
-    const ingredientData = foodStore.getIngredientNutritionalData(newIngredient.value.name)
-    if (!ingredientData) {
-      console.warn(
-        `Ingrediente "${newIngredient.value.name}" non trovato nel database. I suoi valori nutrizionali non saranno inclusi nel calcolo.`,
-      )
-      // Potresti mostrare un avviso all'utente qui
-    }
-    foodStore.addIngredientToCurrentPlate({ ...newIngredient.value })
-    isModalOpen.value = false
-  } else {
-    console.log("Per favore, inserisci il nome e una quantità valida per l'ingrediente.")
-  }
+  plateDetails.value.ingredients.push('')
 }
 
-// Calcoli dinamici per il piatto in creazione
-const calculatedTotalWeight = computed(() => {
-  return foodStore.currentPlate.ingredients.reduce((sum, ing) => sum + (ing.quantity || 0), 0)
-})
-
-const calculatedTotalKcal = computed(() => {
-  return foodStore.currentPlate.ingredients.reduce((sum, ing) => {
-    const ingredientData = foodStore.getIngredientNutritionalData(ing.name)
-    if (ingredientData && ing.quantity) {
-      return sum + (ingredientData.kcal / 100) * ing.quantity
-    }
-    return sum
-  }, 0)
-})
-
-const calculatedTotalCarbs = computed(() => {
-  return foodStore.currentPlate.ingredients.reduce((sum, ing) => {
-    const ingredientData = foodStore.getIngredientNutritionalData(ing.name)
-    if (ingredientData && ing.quantity) {
-      return sum + (ingredientData.carbs / 100) * ing.quantity
-    }
-    return sum
-  }, 0)
-})
-
-const calculatedTotalProteins = computed(() => {
-  return foodStore.currentPlate.ingredients.reduce((sum, ing) => {
-    const ingredientData = foodStore.getIngredientNutritionalData(ing.name)
-    if (ingredientData && ing.quantity) {
-      return sum + (ingredientData.proteins / 100) * ing.quantity
-    }
-    return sum
-  }, 0)
-})
-
-const calculatedTotalFats = computed(() => {
-  return foodStore.currentPlate.ingredients.reduce((sum, ing) => {
-    const ingredientData = foodStore.getIngredientNutritionalData(ing.name)
-    if (ingredientData && ing.quantity) {
-      return sum + (ingredientData.fats / 100) * ing.quantity
-    }
-    return sum
-  }, 0)
-})
+const removeIngredient = (index) => {
+  if (plateDetails.value.ingredients.length > 1) {
+    plateDetails.value.ingredients.splice(index, 1)
+  } else {
+    plateDetails.value.ingredients[0] = ''
+  }
+}
 
 const savePlate = () => {
-  // Validazione: assicurati che il nome del piatto sia presente e che ci siano ingredienti
-  if (!foodStore.currentPlate.name || foodStore.currentPlate.ingredients.length === 0) {
-    console.log('Per favore, inserisci il nome del piatto e almeno un ingrediente.')
-    return
+  plateDetails.value.ingredients = plateDetails.value.ingredients.filter((ing) => ing.trim() !== '')
+
+  if (isEditMode.value) {
+    dishesStore.updateDish(plateDetails.value)
+    console.log('Piatto modificato:', plateDetails.value)
+  } else {
+    dishesStore.addDish(plateDetails.value)
+    console.log('Piatto salvato:', plateDetails.value)
   }
-
-  const totalWeight = calculatedTotalWeight.value
-  if (totalWeight === 0) {
-    console.log('Il peso totale del piatto non può essere zero. Aggiungi ingredienti con quantità.')
-    return
-  }
-
-  // Calcola i valori nutrizionali per 100g del PIATTO FINALE
-  const factor = 100 / totalWeight // Es: 100 / 400g = 0.25
-
-  foodStore.currentPlate.kcal = Math.round(calculatedTotalKcal.value * factor)
-  foodStore.currentPlate.carbs = parseFloat((calculatedTotalCarbs.value * factor).toFixed(1))
-  foodStore.currentPlate.proteins = parseFloat((calculatedTotalProteins.value * factor).toFixed(1))
-  foodStore.currentPlate.fats = parseFloat((calculatedTotalFats.value * factor).toFixed(1))
-
-  // Salva il nuovo piatto nello store (che ora contiene i valori per 100g)
-  foodStore.addNewPlate({ ...foodStore.currentPlate })
-  foodStore.resetCurrentPlate() // Resetta lo stato per il prossimo piatto
-
-  router.push('/home') // Torna alla schermata principale
+  router.back()
 }
+
+onMounted(loadPlateForEdit)
+watch(() => props.dishId, loadPlateForEdit)
 </script>
 
 <style scoped>
-ion-list-header {
-  margin-top: 20px;
-  --color: #555;
+ion-toolbar {
+  --background: #f8f8f8;
+  --color: #333;
+}
+ion-title {
+  font-size: 1.2em;
   font-weight: bold;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
-
-ion-list-header ion-button {
-  font-size: 1.8em;
-  --padding-start: 0;
-  --padding-end: 0;
+ion-card {
+  margin-top: 20px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
-
+ion-card-content {
+  padding: 15px;
+}
 ion-item {
-  --padding-start: 0;
-  --inner-padding-end: 0;
-  border-radius: 10px;
   margin-bottom: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  --background: #f9f9f9;
+  border-radius: 8px;
 }
-
-ion-input {
-  --padding-start: 10px;
-  --padding-end: 10px;
+ion-list-header {
+  font-size: 1em;
+  font-weight: bold;
+  color: #333;
+  margin-top: 20px;
+  margin-bottom: 10px;
+  padding-left: 0;
 }
-
 ion-button {
   --border-radius: 10px;
-  margin-top: 30px;
-  --background: #4caf50;
-  --background-activated: #45a049;
+  height: 48px;
+  font-size: 1.05em;
+  --background: #2196f3;
+  --background-activated: #1976d2;
   --box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+ion-button[fill='outline'] {
+  --background: transparent;
+  --border-color: #2196f3;
+  --color: #2196f3;
 }
 </style>

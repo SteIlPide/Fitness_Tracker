@@ -62,6 +62,70 @@
         <p>Nessun dato di riepilogo disponibile. Torna indietro per selezionare un piatto.</p>
         <ion-button @click="router.back()">Torna indietro</ion-button>
       </div>
+
+      <!-- NUOVO: Action Sheet per le opzioni "Aggiungi a Cartella" -->
+      <ion-action-sheet
+        :is-open="showAddToFolderOptions"
+        header="Aggiungi il piatto a una cartella?"
+        :buttons="addToFolderOptionsButtons"
+        @didDismiss="showAddToFolderOptions = false"
+      ></ion-action-sheet>
+
+      <!-- NUOVO: Modale per selezionare una cartella esistente -->
+      <ion-modal :is-open="showSelectFolderModal" @didDismiss="showSelectFolderModal = false">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Seleziona Cartella</ion-title>
+            <template v-slot:end>
+              <ion-buttons>
+                <ion-button @click="showSelectFolderModal = false">Annulla</ion-button>
+              </ion-buttons>
+            </template>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content>
+          <ion-list v-if="dishesStore.folders.length > 0">
+            <ion-item
+              button
+              v-for="folder in dishesStore.folders"
+              :key="folder.id"
+              @click="addSavedDishToFolder(folder.id)"
+            >
+              <ion-label>{{ folder.name }}</ion-label>
+            </ion-item>
+          </ion-list>
+          <p v-else class="ion-text-center ion-padding">
+            Nessuna cartella disponibile. Crea una nuova cartella.
+          </p>
+        </ion-content>
+      </ion-modal>
+
+      <!-- NUOVO: Modale per la creazione di una nuova cartella (riutilizzata) -->
+      <ion-modal :is-open="showCreateFolderModal" @didDismiss="showCreateFolderModal = false">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Crea Nuova Cartella</ion-title>
+            <template v-slot:end>
+              <ion-buttons>
+                <ion-button @click="showCreateFolderModal = false">Annulla</ion-button>
+              </ion-buttons>
+            </template>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <ion-item>
+            <ion-label position="floating" for="newFolderNameInput">Nome della Cartella</ion-label>
+            <ion-input id="newFolderNameInput" v-model="newFolderName" required></ion-input>
+          </ion-item>
+          <ion-button
+            expand="block"
+            class="ion-margin-top"
+            @click="confirmCreateFolder"
+            :disabled="!newFolderName.trim()"
+            >Crea</ion-button
+          >
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -71,6 +135,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useFoodStore } from '../stores/food'
 import { useUserStore } from '../stores/user'
+import { useDishesStore } from '../stores/dishes' // Importa lo store dei piatti
 import {
   IonPage,
   IonHeader,
@@ -83,29 +148,36 @@ import {
   IonButton,
   IonButtons,
   IonBackButton,
+  IonActionSheet,
+  IonModal,
+  IonList, // Aggiunto IonList
 } from '@ionic/vue'
+import { folderOutline, addCircleOutline as addCircleOutlineIcon } from 'ionicons/icons' // Importa le icone necessarie
 
 const router = useRouter()
-const route = useRoute() // Per leggere i parametri di rotta
+const route = useRoute()
 const foodStore = useFoodStore()
 const userStore = useUserStore()
+const dishesStore = useDishesStore() // Inizializza lo store dei piatti
 
-// La quantità viene passata come query parameter dalla pagina precedente
 const quantityToDisplay = ref(null)
 
+// NUOVO: Stati per le modali e action sheet "Aggiungi a Cartella"
+const showAddToFolderOptions = ref(false)
+const showSelectFolderModal = ref(false)
+const showCreateFolderModal = ref(false)
+const newFolderName = ref('')
+
 onMounted(() => {
-  // Recupera la quantità dalla query string
   if (route.query.quantity) {
     quantityToDisplay.value = parseFloat(route.query.quantity)
   }
 
-  // Se non ci sono dati del cibo selezionato o quantità, reindirizza
   if (!foodStore.selectedFoodForQuantity || !quantityToDisplay.value) {
-    router.replace('/home') // O a una pagina di errore/inizio appropriata
+    router.replace('/home')
   }
 })
 
-// Calcoli delle proprietà nutrizionali basati sulla quantità e sui dati per 100g
 const calculatedKcal = computed(() => {
   if (!foodStore.selectedFoodForQuantity || !quantityToDisplay.value) return 0
   return (foodStore.selectedFoodForQuantity.kcal / 100) * quantityToDisplay.value
@@ -126,11 +198,10 @@ const calculatedFats = computed(() => {
   return (foodStore.selectedFoodForQuantity.fats / 100) * quantityToDisplay.value
 })
 
-// Azione per aggiungere il cibo al pasto (logica principale)
 const addFoodToMeal = () => {
   if (foodStore.selectedFoodForQuantity && quantityToDisplay.value) {
     const food = foodStore.selectedFoodForQuantity
-    const mealType = foodStore.selectedMealType // Il tipo di pasto è già nello store
+    const mealType = foodStore.selectedMealType
 
     const foodEntry = {
       name: food.name,
@@ -145,32 +216,106 @@ const addFoodToMeal = () => {
 
     userStore.addFoodEntryToMeal(mealType, foodEntry)
 
-    // Resetta lo stato temporaneo nello store food dopo l'aggiunta
     foodStore.setSelectedFoodForQuantity(null)
     foodStore.setSelectedMealType('')
 
-    router.push('/home') // Torna alla schermata principale
+    router.push('/home')
   } else {
     console.log("Errore: dati del cibo o quantità mancanti per l'aggiunta al pasto.")
   }
 }
 
-// Azione per aggiungere a una cartella (funzionalità futura)
+// NUOVO: Funzione per aprire l'Action Sheet "Aggiungi a Cartella"
 const addToFolder = () => {
-  console.log('Funzionalità: Aggiungi a una cartella (da implementare)')
-  // Qui si potrebbe navigare a una pagina per salvare il piatto in una lista personalizzata
+  console.log('DEBUG: Aperto Action Sheet "Aggiungi a una cartella"')
+  showAddToFolderOptions.value = true
 }
 
-// Azione per modificare il piatto (torna alla pagina precedente)
+// NUOVO: Bottoni per l'Action Sheet "Aggiungi a Cartella"
+const addToFolderOptionsButtons = computed(() => [
+  {
+    text: 'Aggiungi a cartella esistente',
+    icon: folderOutline,
+    handler: () => {
+      console.log('DEBUG: Aggiungi a cartella esistente cliccato.')
+      showSelectFolderModal.value = true
+      return true
+    },
+  },
+  {
+    text: 'Crea nuova cartella',
+    icon: addCircleOutlineIcon,
+    handler: () => {
+      console.log('DEBUG: Crea nuova cartella cliccato.')
+      showCreateFolderModal.value = true
+      return true
+    },
+  },
+  {
+    text: 'Annulla',
+    role: 'cancel',
+    handler: () => {
+      console.log('DEBUG: Annulla opzioni aggiungi a cartella.')
+      return true
+    },
+  },
+])
+
+// NUOVO: Funzione per aggiungere il piatto alla cartella scelta
+const addSavedDishToFolder = (folderId) => {
+  if (foodStore.selectedFoodForQuantity && folderId) {
+    // Creiamo un oggetto piatto con i dettagli necessari per lo store dishes
+    const dishToAdd = {
+      id: foodStore.selectedFoodForQuantity.id, // Usiamo l'ID del cibo selezionato
+      name: foodStore.selectedFoodForQuantity.name,
+      kcal: foodStore.selectedFoodForQuantity.kcal, // Questi sono già per 100g
+      carbs: foodStore.selectedFoodForQuantity.carbs,
+      proteins: foodStore.selectedFoodForQuantity.proteins,
+      fats: foodStore.selectedFoodForQuantity.fats,
+      ingredients: foodStore.selectedFoodForQuantity.ingredients || [],
+    }
+    dishesStore.addDishToFolder(dishToAdd.id, folderId)
+    console.log(`DEBUG: Piatto '${dishToAdd.name}' aggiunto alla cartella '${folderId}'`)
+    showSelectFolderModal.value = false // Chiude la modale
+    // Non torniamo alla home qui, l'utente potrebbe voler aggiungere al pasto dopo
+  }
+}
+
+// NUOVO: Funzione per confermare la creazione della cartella
+const confirmCreateFolder = () => {
+  const folderName = newFolderName.value.trim()
+  if (folderName) {
+    dishesStore.addFolder(folderName)
+    // Dopo aver creato la cartella, aggiungi il piatto selezionato ad essa
+    const newFolder = dishesStore.folders.find((f) => f.name === folderName) // Trova la cartella appena creata
+    if (newFolder && foodStore.selectedFoodForQuantity) {
+      const dishToAdd = {
+        id: foodStore.selectedFoodForQuantity.id,
+        name: foodStore.selectedFoodForQuantity.name,
+        kcal: foodStore.selectedFoodForQuantity.kcal,
+        carbs: foodStore.selectedFoodForQuantity.carbs,
+        proteins: foodStore.selectedFoodForQuantity.proteins,
+        fats: foodStore.selectedFoodForQuantity.fats,
+        ingredients: foodStore.selectedFoodForQuantity.ingredients || [],
+      }
+      dishesStore.addDishToFolder(dishToAdd.id, newFolder.id)
+      console.log(
+        `DEBUG: Piatto '${dishToAdd.name}' aggiunto alla nuova cartella '${newFolder.name}'`,
+      )
+    }
+    showCreateFolderModal.value = false
+    newFolderName.value = ''
+    // Non torniamo alla home qui, l'utente potrebbe voler aggiungere al pasto dopo
+  }
+}
+
 const modifyPlate = () => {
-  // Torna alla pagina di inserimento quantità, mantenendo il cibo selezionato
   router.back()
 }
 
-// Azione per annullare e tornare alla home
 const cancelAction = () => {
-  foodStore.setSelectedFoodForQuantity(null) // Resetta il cibo selezionato
-  foodStore.setSelectedMealType('') // Resetta il tipo di pasto
+  foodStore.setSelectedFoodForQuantity(null)
+  foodStore.setSelectedMealType('')
   router.push('/home')
 }
 </script>
@@ -196,7 +341,7 @@ ion-item {
 .summary-item ion-text {
   font-size: 1.1em;
   color: #555;
-  padding-left: 10px; /* Spazio tra label e valore */
+  padding-left: 10px;
 }
 
 .action-button {
@@ -208,17 +353,17 @@ ion-item {
 }
 
 .action-button[color='secondary'] {
-  --background: #ffc107; /* Giallo per "Aggiungi a una cartella" */
+  --background: #ffc107;
   --background-activated: #ffa000;
   --color: #333;
 }
 
 .action-button[fill='outline'] {
-  --border-color: #2196f3; /* Blu per "Modifica piatto" */
+  --border-color: #2196f3;
   --color: #2196f3;
 }
 
 .action-button[fill='clear'] {
-  --color: #f44336; /* Rosso per "Annulla" */
+  --color: #f44336;
 }
 </style>

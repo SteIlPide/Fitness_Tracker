@@ -1,16 +1,17 @@
 <template>
-  <ion-app>
+  <ion-app :class="{ 'has-footer': showFooter }">
     <!-- ion-router-outlet renderà il contenuto della pagina corrente -->
     <ion-router-outlet />
 
     <!-- Menu di Navigazione Personalizzato (Globale e Condizionale) -->
     <div class="custom-footer-menu" v-if="showFooter">
+      <!-- Elemento per Obiettivi e Attività -->
       <div
         class="menu-item"
-        :class="{ active: $route.path === '/obiettivi' }"
-        @click="router.push('/obiettivi')"
+        :class="{ active: $route.path === '/obiettivi-attivita' }"
+        @click="router.push('/obiettivi-attivita')"
       >
-        <img src="https://placehold.co/24x24/000000/ffffff?text=🎯" alt="Obiettivi" />
+        <img src="https://placehold.co/24x24/000000/ffffff?text=🏋️" alt="Obiettivi" />
         <span>Obiettivi</span>
       </div>
       <div
@@ -51,20 +52,19 @@
 
 <script setup>
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
-import { useRouter, useRoute } from 'vue-router' // Importa useRoute
-import { computed } from 'vue' // Importa computed
+import { useRouter, useRoute } from 'vue-router'
+import { computed } from 'vue'
 
 const router = useRouter()
-const route = useRoute() // Necessario per la classe 'active' e per showFooter
+const route = useRoute()
 
 // Definisci le rotte in cui il footer DEVE essere visibile
 const routesWithFooter = [
   '/home',
-  '/obiettivi',
   '/calendario',
+  '/obiettivi-attivita',
   '/piatti-salvati',
   '/impostazioni',
-  // Includi anche le pagine di aggiunta/ricerca cibo se vuoi il footer lì
   '/select-meal',
   '/search-create-plate',
   '/add-plate-details',

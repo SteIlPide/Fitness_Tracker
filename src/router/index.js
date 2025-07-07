@@ -9,11 +9,12 @@ import AggiuntaPiatto from '../pages/AggiuntaPiatto.vue'
 import RicercaPiatto from '../pages/RicercaPiatto.vue'
 import SchermataQuantPiattoScelto from '../pages/SchermataQuantPiattoScelto.vue'
 import RiepilogoPiatto from '../pages/RiepilogoPiatto.vue'
-// Nuovi import per le pagine del menu
-import ObiettiviPage from '../pages/ObiettiviPage.vue'
 import CalendarioPage from '../pages/CalendarioPage.vue'
 import PiattiSalvatiPage from '../pages/PiattiSalvatiPage.vue'
 import ImpostazioniPage from '../pages/ImpostazioniPage.vue'
+// NUOVO: Pagina per visualizzare gli ingredienti
+import IngredientsPage from '../pages/IngredientsPage.vue'
+import ObiettiviAttivitaPage from '../pages/ObiettiviAttivitaPage.vue' // Corretto a ../pages/
 
 const routes = [
   {
@@ -71,12 +72,6 @@ const routes = [
     name: 'FoodSummary',
     component: RiepilogoPiatto,
   },
-  // Nuove rotte per le pagine del menu
-  {
-    path: '/obiettivi',
-    name: 'Obiettivi',
-    component: ObiettiviPage,
-  },
   {
     path: '/calendario',
     name: 'Calendario',
@@ -91,6 +86,18 @@ const routes = [
     path: '/impostazioni',
     name: 'Impostazioni',
     component: ImpostazioniPage,
+  },
+  // NUOVA ROTTA: Pagina per gli ingredienti
+  {
+    path: '/ingredients/:dishId', // Usa un parametro di rotta per l'ID del piatto
+    name: 'IngredientsPage',
+    component: IngredientsPage,
+    props: true, // Passa il parametro di rotta come prop al componente
+  },
+  {
+    path: '/obiettivi-attivita',
+    name: 'ObiettiviAttivita',
+    component: ObiettiviAttivitaPage,
   },
 ]
 

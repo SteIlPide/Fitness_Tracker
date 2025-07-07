@@ -455,7 +455,7 @@ watch(
 const waterTracker = ref({
   targetLiters: 2.5,
   glassSizeMl: 250,
-  currentGlasses: 3,
+  currentGlasses: 0,
   targetGlasses: computed(() =>
     Math.ceil((waterTracker.value.targetLiters * 1000) / waterTracker.value.glassSizeMl),
   ),
